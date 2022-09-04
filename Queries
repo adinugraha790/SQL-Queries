@@ -1,0 +1,206 @@
+SET sql_mode = 'ONLY_FULL_GROUP_BY';
+
+select
+kode_cabang,
+kode_produk,
+max(jumlah_pembelian)
+jumlah_pembelian
+from tr_penjualan
+group by
+kode_cabang
+
+# ini harusnya error soalnya ada field/column 
+# yang ga di aggregasi tapi ga dicantumin di GROUP BY
+# because each kode cabang can have different kode produk,
+# and vice versa, so..
+
+select k.nama_depan, p.nama_propinsi as propinsi_kasir, p_nama_propinsi as propinsi_transaksi, 
+COUNT(t.kode_transaksi) as Total_Transaksi, AVG(t.jumlah_pembelian) as MeanPembelian,
+SUM(t.jumlah_pembelian*h.harga_berlaku_cabang) as TotalAmount,
+h.harga_berlaku_cabang-h.modal_cabang-h.biaya_cabang as Total_Keuntungan
+from ms_cabang c
+join ms_karyawan k 
+ON c.kode_cabang=k.kode_cabang
+join tr_penjualan t
+on c.kode_cabang=t.kode_cabang
+join ms_kota k2 
+on c.kode_kota=k2.kode_kota 
+join ms_propinsi p
+on k2.kode_propinsi=p.kode_propinsi 
+join ms_harga_harian h
+on t.kode_produk=t.kode_produk AND t.kode_cabang=h.kode_cabang
+group by k.nama_depan, propinsi_kasir, propinsi_transaksi
+
+select ms_karyawan.nama_depan as first_name, ms_propinsi.nama_propinsi as cashier_province, 
+ms_propinsi.nama_propinsi as transaction_province, sum(jumlah_pembelian) as transaction_total, avg(jumlah_pembelian) as transaction_avg,
+sum(harga_berlaku_cabang) as total_amount, sum(harga_berlaku_cabang-modal_cabang-biaya_cabang) as total_profit
+from tr_penjualan
+join ms_cabang using (kode_cabang)
+join ms_harga_harian using (kode_cabang)
+join ms_karyawan using (kode_cabang)
+join ms_kota using (kode_kota)
+join ms_propinsi using (kode_propinsi)
+group by first_name, cashier_province, transaction_province
+
+select month(tgl_transaksi) as bulan, count(kode_transaksi) as totalpenjualan
+from tr_penjualan
+where year(tgl_transaksi) = '2008'
+
+select COUNT(*)
+from tr_penjualan
+where kode_transaksi is null or tgl_transaksi  is null or kode_cabang  is null  or kode_kasir  is null 
+or kode_item  is null  or kode_cabang  is null  or jumlah_pembelian  is null 
+
+select COUNT(kode_cabang)
+from cabang c  
+where kode_kota='KOTA-065'
+
+select sum(hh.harga_berlaku_cabang-hh.modal_cabang-hh.biaya_cabang) as keuntungan
+from tr_penjualan tp 
+inner join harga_harian hh
+on tp.kode_produk=hh.kode_produk and tp.kode_cabang = hh.kode_cabang 
+where date(tp.tgl_transaksi) = '2008-08-08' and tp.kode_cabang = 'CABANG-039'
+
+select count(*)
+from produk p 
+where nama_produk like '%ml' and kode_satuan like '%btl'
+
+select *
+from karyawan k 
+
+select count(*)
+from cl_fi_country_groups cfcg 
+
+select mp.nama_pegawai, COUNT(distinct ts.no_so) AS jumlah_so, mp.target, 
+CASE WHEN COUNT(distinct ts.no_so) >= mp.target THEN 'tidak'
+	WHEN COUNT(distinct ts.no_so) < mp.target THEN 'ya' END AS kurang_dari_target
+FROM ms_pegawai mp
+JOIN tr_so ts
+ON mp.kode_pegawai = ts.kode_sales
+GROUP BY mp.nama_pegawai
+order by mp.nama_pegawai # 1
+
+with tr_so_1 as (select *, 
+case when ts.satuan = 'krat' then ts.qty * 24
+	when ts.satuan = 'dus' then ts.qty * 30
+	when ts.satuan = 'botol' then ts.qty * 1 end as qty_ 
+from tr_so ts
+)	
+select td.no_do, mc.kode_customer, td.tgl_do, ts.qty_,
+FLOOR((ts.qty_ * mp.harga_satuan) * (1 + 10/100) + mc.ongkos_kirim) AS amount
+FROM tr_do td
+JOIN tr_so_1 ts ON td.no_entry_so = ts.no_entry_so
+JOIN ms_customer mc ON ts.kode_customer = mc.kode_customer
+JOIN ms_product mp ON ts.kode_barang = mp.kode_produk # 2
+
+select td.no_do, mc.nama_customer, td.tgl_do, '2018-02-01' as date_measurement, 
+DATEDIFF('2018-02-01', td.tgl_do) as aging
+from tr_inv ti 
+right join tr_do td on ti.no_entry_do = td.no_entry_do 
+JOIN tr_so ts ON td.no_entry_so = ts.no_entry_so
+join ms_customer mc ON ts.kode_customer = mc.kode_customer
+where ti.no_inv is null
+order by aging desc # 3
+
+with tr_so_1 as (select *, 
+case when ts.satuan = 'krat' then ts.qty * 24
+	when ts.satuan = 'dus' then ts.qty * 30
+	when ts.satuan = 'botol' then ts.qty * 1 end as qty_ 
+from tr_so ts
+)
+select mp.nama_product, SUM(ts.qty_) as qty
+from tr_so_1 ts
+join ms_product mp on ts.kode_barang = mp.kode_produk  
+group by mp.nama_product
+order by qty desc  # 4
+
+select mp.kode_produk, mp.kode_vendor, 
+
+select *, 
+case when ts.satuan = 'krat' then ts.qty * 24
+	when ts.satuan = 'dus' then ts.qty * 30
+	when ts.satuan = 'botol' then ts.qty * 1 end as qty_ 
+from tr_so ts
+
+with tr_so_1 as (select *, 
+case when ts.satuan = 'krat' then ts.qty * 24
+	when ts.satuan = 'dus' then ts.qty * 30
+	when ts.satuan = 'botol' then ts.qty * 1 end as qty_ 
+from tr_so ts
+)
+select mv.vendor, sum(ts.qty_ * mp.harga_satuan) as qty
+from tr_inv ti 
+right join tr_do td on ti.no_entry_do = td.no_entry_do 
+JOIN tr_so_1 ts ON td.no_entry_so = ts.no_entry_so
+join ms_product mp on ts.kode_barang = mp.kode_produk
+join ms_vendor mv on mp.kode_vendor = mv.kode_vendor 
+where ti.no_inv is not null
+group by mv.kode_vendor 
+order by qty desc # 5
+
+with nodes_1 as (select node,
+case when parent is null then 'Akar'
+	when node exists(select distinct parent from nodes) then 'Daun'
+	when node exists(select distinct parent from nodes) then 'Batang' END AS position
+from nodes)
+SELECT node, position
+FROM nodes_1
+ORDER BY node
+
+with nodes_1 as (select node
+from nodes where exists (select parent from nodes))
+select nodes, 
+
+with nodes_1 as (select node
+from nodes where node in (select parent from nodes) and parent is not null)
+SELECT n.node,
+case when parent is null then 'Akar'
+	when n.node not in (select node from nodes_1) then 'Daun'
+	when n.node in (select node from nodes_1) then 'Batang' END AS position
+FROM nodes n
+left join nodes_1 n1 on n.node = n1.node
+ORDER BY n.node #6
+
+SELECT X, Y FROM (
+SELECT X, Y FROM xy WHERE X=Y GROUP BY X, Y HAVING COUNT(*)=2
+UNION
+SELECT xy1.X, xy1.Y FROM xy xy1, xy xy2
+WHERE xy1.X < xy1.Y 
+AND xy1.X=xy2.Y 
+AND xy2.X=xy1.Y
+) as t
+ORDER BY X, Y; #7
+
+with temp as (select regexp_substr(strdata, '[0-9]+-[0-9]+-[0-9]+') as tanggal,
+regexp_substr(strdata, '[0-9]{1,2}.(buah|lusin)') as qty,
+regexp_substr(strdata, 'Rp [0-9]+') as harga_satuan
+from strdata
+)
+select t.tanggal, 
+case when regexp_substr(t.qty, '(buah|lusin)') = 'lusin'
+then regexp_substr(t.qty, '[0-9]+') * 12
+when regexp_substr(t.qty, '(buah|lusin)') = 'buah'
+then regexp_substr(t.qty, '[0-9]+') * 1 END
+as qty,
+regexp_substr(t.harga_satuan, '[0-9]+') as harga_satuan
+from temp t
+
+with temp as (select regexp_substr(strdata, '[0-9]+-[0-9]+-[0-9]+') as tanggal,
+regexp_substr(strdata, '[0-9]{1,2}.(buah|lusin)') as qty,
+regexp_substr(strdata, 'Rp [0-9]+') as total
+from strdata
+)
+select t.tanggal, 
+case when regexp_substr(t.qty, '(buah|lusin)') = 'lusin'
+then regexp_substr(t.qty, '[0-9]+') * 12
+when regexp_substr(t.qty, '(buah|lusin)') = 'buah'
+then regexp_substr(t.qty, '[0-9]+') * 1 END
+as qty,
+(regexp_substr(t.total, '[0-9]+') /
+case when regexp_substr(t.qty, '(buah|lusin)') = 'lusin'
+then regexp_substr(t.qty, '[0-9]+') * 12
+when regexp_substr(t.qty, '(buah|lusin)') = 'buah'
+then regexp_substr(t.qty, '[0-9]+') * 1 END) as harga_satuan,
+cast(regexp_substr(t.total, '[0-9]+') as unsigned) as total
+from temp t #8
+
